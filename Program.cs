@@ -132,7 +132,7 @@ namespace HeadsetBatteryIcon
 			var averageTimeLeft = averageTime * batteryPercentage;
 
 			icon.Text = $"Battery left: {batteryPercentage}%\r\n" +
-				$"Estimate left: ~{averageTimeLeft:hh\\:mm}";
+				$"Estimate left: ~{averageTimeLeft:hh\\:mm}h";
 		}
 
 		private Icon GetIconForPercentage(int percentage)
