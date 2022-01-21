@@ -120,7 +120,7 @@ namespace HeadsetBatteryIcon
 				return;
 			}
 
-			var latestPercentages = dischargeTimes.OrderBy(x => x.Timestamp).Take(5);
+			var latestPercentages = dischargeTimes.OrderByDescending(x => x.Timestamp).Take(5);
 
 			if (!latestPercentages.Any())
 			{
