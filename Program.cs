@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text;
 
 #nullable disable
 
@@ -50,6 +51,7 @@ namespace HeadsetBatteryIcon
 			var contextMenuStrip = new ContextMenuStrip(new Container());
 			contextMenuStrip.Items.AddRange(new[]
 			{
+				new ToolStripMenuItem("Debug", null, OpenDebugPopup),
 				new ToolStripMenuItem("Exit", null, Exit)
 			});
 
@@ -61,6 +63,36 @@ namespace HeadsetBatteryIcon
 			};
 
 			timer = new(CheckBatteryPercentage, null, 0, 1000 * 5);
+		}
+
+		private void OpenDebugPopup(object sender, EventArgs e)
+		{
+			var sb = new StringBuilder();
+
+			var batteryPercentage = arctis.GetBatteryPercentage();
+			var estimatedBatteryLife = GetEstimatedBatteryLife(batteryPercentage);
+			if (dischargeTimes.Count > 0)
+			{
+				sb.AppendLine("Discharge times: ");
+				foreach (var time in dischargeTimes)
+				{
+					sb.AppendLine($"Timestamp: {time.Timestamp}, Interval: {time.Interval}");
+				}
+
+				sb.AppendLine("----------------------");
+				sb.AppendLine($"Latest discharge: {dischargeTimes.OrderByDescending(x => x.Timestamp).First().Timestamp}");
+				sb.AppendLine($"Avg time to lose 1%: {estimatedBatteryLife}");
+			}
+			sb.AppendLine();
+			sb.AppendLine($"Current percentage: {batteryPercentage}%");
+
+			if (dischargeTimes.Count > 0)
+			{
+				sb.AppendLine($"Estimated battery life left: {(estimatedBatteryLife == TimeSpan.Zero ? "Calculating" : estimatedBatteryLife * batteryPercentage)}");
+			}	
+
+
+			MessageBox.Show(sb.ToString(), "Debug stuff", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
 		private void Exit(object sender, EventArgs e)
@@ -120,19 +152,30 @@ namespace HeadsetBatteryIcon
 				return;
 			}
 
+			var estimatedBatteryLife = GetEstimatedBatteryLife(batteryPercentage) * batteryPercentage;
+
+			if (estimatedBatteryLife == TimeSpan.Zero)
+			{
+				icon.Text = $"Battery left: {batteryPercentage}%\r\n" +
+					$"Estimate left: Calculating...";
+				return;
+			}
+
+			icon.Text = $"Battery left: {batteryPercentage}%\r\n" +
+				$"Estimate left: {estimatedBatteryLife.Days}d {estimatedBatteryLife.Hours}h {estimatedBatteryLife.Minutes}m";
+		}
+
+		private TimeSpan GetEstimatedBatteryLife(int batteryPercentage)
+		{
 			var latestPercentages = dischargeTimes.OrderByDescending(x => x.Timestamp).Take(5);
 
 			if (!latestPercentages.Any())
 			{
-				icon.Text = $"Battery left: {batteryPercentage}%";
-				return;
+				return TimeSpan.Zero;
 			}
 
 			var averageTime = new TimeSpan(Convert.ToInt64(latestPercentages.Average(x => x.Interval.Ticks)));
-			var averageTimeLeft = averageTime * batteryPercentage;
-
-			icon.Text = $"Battery left: {batteryPercentage}%\r\n" +
-				$"Estimate left: ~{averageTimeLeft:hh\\:mm}h";
+			return averageTime;
 		}
 
 		private Icon GetIconForPercentage(int percentage)
