@@ -70,7 +70,8 @@ namespace HeadsetBatteryIcon
 			var sb = new StringBuilder();
 
 			var batteryPercentage = arctis.GetBatteryPercentage();
-			var estimatedBatteryLife = GetEstimatedBatteryLife(batteryPercentage);
+			var estimatedDischargeTime = GetEstimatedDischargeTime();
+
 			if (dischargeTimes.Count > 0)
 			{
 				sb.AppendLine("Discharge times: ");
@@ -81,14 +82,14 @@ namespace HeadsetBatteryIcon
 
 				sb.AppendLine("----------------------");
 				sb.AppendLine($"Latest discharge: {dischargeTimes.OrderByDescending(x => x.Timestamp).First().Timestamp}");
-				sb.AppendLine($"Avg time to lose 1%: {estimatedBatteryLife}");
+				sb.AppendLine($"Avg time to lose 1%: {estimatedDischargeTime}");
 			}
 			sb.AppendLine();
 			sb.AppendLine($"Current percentage: {batteryPercentage}%");
 
 			if (dischargeTimes.Count > 0)
 			{
-				sb.AppendLine($"Estimated battery life left: {(estimatedBatteryLife == TimeSpan.Zero ? "Calculating" : estimatedBatteryLife * batteryPercentage)}");
+				sb.AppendLine($"Estimated battery life left: {(estimatedDischargeTime == TimeSpan.Zero ? "Calculating" : estimatedDischargeTime * batteryPercentage)}");
 			}	
 
 
@@ -152,9 +153,9 @@ namespace HeadsetBatteryIcon
 				return;
 			}
 
-			var estimatedBatteryLife = GetEstimatedBatteryLife(batteryPercentage) * batteryPercentage;
+			var estimatedDischargeTime = GetEstimatedDischargeTime() * batteryPercentage;
 
-			if (estimatedBatteryLife == TimeSpan.Zero)
+			if (estimatedDischargeTime == TimeSpan.Zero)
 			{
 				icon.Text = $"Battery left: {batteryPercentage}%\r\n" +
 					$"Estimate left: Calculating...";
@@ -162,10 +163,10 @@ namespace HeadsetBatteryIcon
 			}
 
 			icon.Text = $"Battery left: {batteryPercentage}%\r\n" +
-				$"Estimate left: {estimatedBatteryLife.Days}d {estimatedBatteryLife.Hours}h {estimatedBatteryLife.Minutes}m";
+				$"Estimate left: {estimatedDischargeTime.Days}d {estimatedDischargeTime.Hours}h {estimatedDischargeTime.Minutes}m";
 		}
 
-		private TimeSpan GetEstimatedBatteryLife(int batteryPercentage)
+		private TimeSpan GetEstimatedDischargeTime()
 		{
 			var latestPercentages = dischargeTimes.OrderByDescending(x => x.Timestamp).Take(5);
 
